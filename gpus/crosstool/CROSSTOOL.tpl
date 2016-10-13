@@ -18,6 +18,10 @@ default_toolchain {
   cpu: "darwin"
   toolchain_identifier: "local_darwin"
 }
+default_toolchain {
+  cpu: "ppc"
+  toolchain_identifier: "local_linux"
+}
 
 toolchain {
   abi_version: "local"
@@ -43,7 +47,7 @@ toolchain {
   tool_path { name: "cpp" path: "/usr/bin/cpp" }
   tool_path { name: "dwp" path: "/usr/bin/dwp" }
   # As part of the TensorFlow release, we place some cuda-related compilation
-  # files in third_party/gpus/crosstool/clang/bin, and this relative
+  # files in @local_config_cuda//crosstool/clang/bin, and this relative
   # path, combined with the rest of our Bazel configuration causes our
   # compilation to use those files.
   tool_path { name: "gcc" path: "clang/bin/crosstool_wrapper_driver_is_not_gcc" }
@@ -53,13 +57,7 @@ toolchain {
   linker_flag: "-lstdc++"
   linker_flag: "-B/usr/bin/"
 
-  # TODO(bazel-team): In theory, the path here ought to exactly match the path
-  # used by gcc. That works because bazel currently doesn't track files at
-  # absolute locations and has no remote execution, yet. However, this will need
-  # to be fixed, maybe with auto-detection?
-  cxx_builtin_include_directory: "/usr/lib/gcc/"
-  cxx_builtin_include_directory: "/usr/local/include"
-  cxx_builtin_include_directory: "/usr/include"
+%{gcc_host_compiler_includes}
   tool_path { name: "gcov" path: "/usr/bin/gcov" }
 
   # C(++) compiles invoke the compiler (as that is the one knowing where
@@ -120,6 +118,9 @@ toolchain {
   # Gold linker only? Can we enable this by default?
   # linker_flag: "-Wl,--warn-execstack"
   # linker_flag: "-Wl,--detect-odr-violations"
+
+  # Include directory for cuda headers.
+  cxx_builtin_include_directory: "%{cuda_include_path}"
 
   compilation_mode_flags {
     mode: DBG
@@ -216,6 +217,9 @@ toolchain {
 
   # Anticipated future default.
   linker_flag: "-no-canonical-prefixes"
+
+  # Include directory for cuda headers.
+  cxx_builtin_include_directory: "%{cuda_include_path}"
 
   compilation_mode_flags {
     mode: DBG

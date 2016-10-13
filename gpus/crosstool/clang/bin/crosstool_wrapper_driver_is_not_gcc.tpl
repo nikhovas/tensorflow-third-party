@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 # Copyright 2015 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,6 +34,8 @@ NOTES:
   //third_party/gpus/crosstool/v*/*/clang/bin/crosstool_wrapper_is_not_gcc
 """
 
+from __future__ import print_function
+
 __author__ = 'keveman@google.com (Manjunath Kudlur)'
 
 from argparse import ArgumentParser
@@ -43,10 +45,9 @@ import re
 import sys
 import pipes
 
-# "configure" uses the specific format to substitute the following string.
-# If you change it, make sure you modify "configure" as well.
-CPU_COMPILER = ('/usr/bin/gcc')
-GCC_HOST_COMPILER_PATH = ('/usr/bin/gcc')
+# Template values set by cuda_autoconf.
+CPU_COMPILER = ('%{cpu_compiler}')
+GCC_HOST_COMPILER_PATH = ('%{gcc_host_compiler_path}')
 
 CURRENT_DIR = os.path.dirname(sys.argv[0])
 NVCC_PATH = CURRENT_DIR + '/../../../cuda/bin/nvcc'
@@ -54,7 +55,7 @@ LLVM_HOST_COMPILER_PATH = ('/usr/bin/gcc')
 PREFIX_DIR = os.path.dirname(GCC_HOST_COMPILER_PATH)
 
 def Log(s):
-  print 'gpus/crosstool: {0}'.format(s)
+  print('gpus/crosstool: {0}'.format(s))
 
 
 def GetOptionValue(argv, option):
@@ -94,40 +95,22 @@ def GetHostCompilerOptions(argv):
   parser.add_argument('-iquote', nargs='*', action='append')
   parser.add_argument('--sysroot', nargs=1)
   parser.add_argument('-g', nargs='*', action='append')
+  parser.add_argument('-fno-canonical-system-headers', action='store_true')
 
   args, _ = parser.parse_known_args(argv)
 
   opts = ''
-  # This is a temporary workaround for b/12960069.
-  # NVIDIA is going to fix this in CUDA 6.5, but until then this workaround
-  # will let us compile Thrust with the cuda crosstool.
-  # bazel passes all include directories as '-isystem dir' to the crosstool.
-  # This causes nvcc to think that there are kernel launches from system
-  # directories (which apparently is not supported by the compiler). This
-  # workaround changes '-isystem third_party/gpus/cuda/include' to
-  # '-iquote third_party/gpus/cuda/include'.
-  isystem_args = [x for x in args.isystem
-                  if 'third_party/gpus/cuda/include' not in x]
-  iquote_args = (args.iquote +
-                 [x for x in args.isystem
-                  if 'third_party/gpus/cuda/include' in x])
-  # This hack is needed so that we can compile eigen3. We need to include
-  # third_party/eigen3 with -I. Some eigen file include using the
-  # include <Eigen/Core> syntax, and -iquote doesn't work for that.
-  has_eigen = ['third_party/eigen3'] in isystem_args
-  if has_eigen:
-    isystem_args.remove(['third_party/eigen3'])
 
-  if isystem_args:
-    opts += '-isystem ' + ' -isystem '.join(sum(isystem_args, []))
-  if iquote_args:
-    opts += ' -iquote ' + ' -iquote '.join(sum(iquote_args, []))
+  if args.isystem:
+    opts += ' -isystem ' + ' -isystem '.join(sum(args.isystem, []))
+  if args.iquote:
+    opts += ' -iquote ' + ' -iquote '.join(sum(args.iquote, []))
   if args.g:
     opts += ' -g' + ' -g'.join(sum(args.g, []))
+  if args.fno_canonical_system_headers:
+    opts += ' -fno-canonical-system-headers'
   if args.sysroot:
     opts += ' --sysroot ' + args.sysroot[0]
-  if has_eigen:
-    opts += ' -I third_party/eigen3'
 
   return opts
 
@@ -149,51 +132,6 @@ def GetNvccOptions(argv):
   if args.nvcc_options:
     return ' '.join(['--'+a for a in sum(args.nvcc_options, [])])
   return ''
-
-
-def StripAndTransformNvccOptions(argv):
-  """Strips the -nvcc_options values from argv and transforms define-macros.
-
-  Args:
-    argv: A list of strings, possibly the argv passed to main().
-
-  Returns:
-    A list of strings that can be passed directly to gcudacc.
-  """
-  parser = ArgumentParser()
-  parser.add_argument('-nvcc_options', nargs='*', action='store')
-  args, leftover = parser.parse_known_args(argv)
-  if args.nvcc_options:
-    for option in args.nvcc_options:
-      (flag, _, value) = option.partition('=')
-      if 'define-macro' in flag:
-        leftover.append('-D' + value)
-  return leftover
-
-
-def InvokeGcudacc(argv, gcudacc_version, gcudacc_flags, log=False):
-  """Call gcudacc with arguments assembled from argv.
-
-  Args:
-    argv: A list of strings, possibly the argv passed to main().
-    gcudacc_version: The version of gcudacc; this is a subdirectory name under
-      the gcudacc bin/ directory.
-    gcudacc_flags: A list of extra arguments passed just for gcudacc.
-    log: True if logging is requested.
-
-  Returns:
-    The return value of calling os.system('gcudacc ' + args)
-  """
-
-  gcudacc_cmd = os.path.join(GCUDACC_PATH_BASE, gcudacc_version, 'gcudacc.par')
-  gcudacc_cmd = (
-      gcudacc_cmd +
-      ' --google_host_compiler={0} '.format(LLVM_HOST_COMPILER_PATH) +
-      ' '.join(sum(gcudacc_flags, [])) +
-      ' -- ' +
-      ' '.join(StripAndTransformNvccOptions(argv)))
-  if log: Log(gcudacc_cmd)
-  return os.system(gcudacc_cmd)
 
 
 def InvokeNvcc(argv, log=False):
@@ -248,10 +186,8 @@ def InvokeNvcc(argv, log=False):
   srcs = ' '.join(src_files)
   out = ' -o ' + out_file[0]
 
-  # "configure" uses the specific format to substitute the following string.
-  # If you change it, make sure you modify "configure" as well.
-  supported_cuda_compute_capabilities = [ "3.5", "5.2" ]
-  nvccopts = ''
+  supported_cuda_compute_capabilities = [ %{cuda_compute_capabilities} ]
+  nvccopts = '-D_FORCE_INLINES '
   for capability in supported_cuda_compute_capabilities:
     capability = capability.replace('.', '')
     nvccopts += r'-gencode=arch=compute_%s,\"code=sm_%s,compute_%s\" ' % (
@@ -292,20 +228,11 @@ def main():
   parser = ArgumentParser()
   parser.add_argument('-x', nargs=1)
   parser.add_argument('--cuda_log', action='store_true')
-  parser.add_argument('--use_gcudacc', action='store_true')
-  parser.add_argument('--gcudacc_version', action='store', default='v8')
-  parser.add_argument('--gcudacc_flag', nargs='*', action='append', default=[])
   args, leftover = parser.parse_known_args(sys.argv[1:])
 
   if args.x and args.x[0] == 'cuda':
     if args.cuda_log: Log('-x cuda')
     leftover = [pipes.quote(s) for s in leftover]
-    if args.use_gcudacc:
-      if args.cuda_log: Log('using gcudacc')
-      return InvokeGcudacc(argv=leftover,
-                           gcudacc_version=args.gcudacc_version,
-                           gcudacc_flags=args.gcudacc_flag,
-                           log=args.cuda_log)
     if args.cuda_log: Log('using nvcc')
     return InvokeNvcc(leftover, log=args.cuda_log)
 
@@ -315,21 +242,7 @@ def main():
   # relative location in the argv list (the compiler is actually sensitive to
   # this).
   cpu_compiler_flags = [flag for flag in sys.argv[1:]
-                             if not flag.startswith(('--cuda_log',
-                                                     '--use_gcudacc',
-                                                     '--gcudacc_version',
-                                                     '--gcudacc_flag'))]
-  if args.use_gcudacc:
-    # This macro is defined for TUs that are not marked with "-x cuda" but are
-    # built as part of a -config=cuda --use_gcudacc compilation. They are
-    # compiled with the default CPU compiler. Since the objects built from
-    # these TUs are later linked with objects that come from gcudacc, some
-    # parts of the code need to be marked for these special cases. For example,
-    # some types have to be defined similarly for gcudacc-compiled TUs and
-    # default CPU compiler-compiled TUs linked with them, but differently when
-    # nvcc is used.
-    # TODO(eliben): rename to a more descriptive name.
-    cpu_compiler_flags.append('-D__GCUDACC_HOST__')
+                             if not flag.startswith(('--cuda_log'))]
 
   return subprocess.call([CPU_COMPILER] + cpu_compiler_flags)
 
