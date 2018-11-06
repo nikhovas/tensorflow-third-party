@@ -144,7 +144,7 @@ toolchain {
       flag_group {
         # All warnings are enabled. Maybe enable -Werror as well?
         flag: "-Wall"
-        %{host_compiler_warnings}
+        
       }
     }
   }
@@ -185,7 +185,7 @@ toolchain {
       action: "c++-link-nodeps-dynamic-library"
       flag_group {
         flag: "-no-canonical-prefixes"
-        %{extra_no_canonical_prefixes_flags}
+        flag: "-fno-canonical-system-headers"
       }
     }
   }
@@ -209,7 +209,7 @@ toolchain {
       action: "c++-link-dynamic-library"
       action: "c++-link-nodeps-dynamic-library"
       flag_group {
-        %{linker_bin_path_flag}
+        flag: "-B/usr/bin"
       }
     }
   }
@@ -281,7 +281,7 @@ toolchain {
   }
 
   # Set clang as a C/C++ compiler.
-  tool_path { name: "gcc" path: "%{host_compiler_path}" }
+  tool_path { name: "gcc" path: "clang/bin/crosstool_wrapper_driver_is_not_gcc" }
 
   # Use the default system toolchain for everything else.
   tool_path { name: "ar" path: "/usr/bin/ar" }
@@ -298,7 +298,18 @@ toolchain {
   # Enabled dynamic linking.
   linking_mode_flags { mode: DYNAMIC }
 
-%{host_compiler_includes}
+  cxx_builtin_include_directory: "/usr/include/c++/4.8"
+  cxx_builtin_include_directory: "/usr/include/x86_64-linux-gnu/c++/4.8"
+  cxx_builtin_include_directory: "/usr/include/c++/4.8/backward"
+  cxx_builtin_include_directory: "/usr/lib/gcc/x86_64-linux-gnu/4.8/include"
+  cxx_builtin_include_directory: "/usr/local/include"
+  cxx_builtin_include_directory: "/usr/lib/gcc/x86_64-linux-gnu/4.8/include-fixed"
+  cxx_builtin_include_directory: "/usr/include/x86_64-linux-gnu"
+  cxx_builtin_include_directory: "/usr/include"
+  cxx_builtin_include_directory: "/usr/local/cuda-9.0/targets/x86_64-linux/include"
+  cxx_builtin_include_directory: "/usr/local/cuda-9.0/include"
+  cxx_builtin_include_directory: "/usr/local/cuda-9.0/extras/CUPTI/include"
+  cxx_builtin_include_directory: "/usr/include"
 }
 
 toolchain {
@@ -397,7 +408,7 @@ toolchain {
       flag_group {
         # All warnings are enabled. Maybe enable -Werror as well?
         flag: "-Wall"
-        %{host_compiler_warnings}
+        
       }
     }
   }
@@ -447,7 +458,7 @@ toolchain {
       action: "c++-link-dynamic-library"
       action: "c++-link-nodeps-dynamic-library"
       flag_group {
-        %{linker_bin_path_flag}
+        flag: "-B/usr/bin"
       }
     }
   }
@@ -523,7 +534,7 @@ toolchain {
   }
 
   # Set clang as a C/C++ compiler.
-  tool_path { name: "gcc" path: "%{host_compiler_path}" }
+  tool_path { name: "gcc" path: "clang/bin/crosstool_wrapper_driver_is_not_gcc" }
 
   # Use the default system toolchain for everything else.
   tool_path { name: "ar" path: "/usr/bin/libtool" }
@@ -540,7 +551,18 @@ toolchain {
   # Enabled dynamic linking.
   linking_mode_flags { mode: DYNAMIC }
 
-%{host_compiler_includes}
+  cxx_builtin_include_directory: "/usr/include/c++/4.8"
+  cxx_builtin_include_directory: "/usr/include/x86_64-linux-gnu/c++/4.8"
+  cxx_builtin_include_directory: "/usr/include/c++/4.8/backward"
+  cxx_builtin_include_directory: "/usr/lib/gcc/x86_64-linux-gnu/4.8/include"
+  cxx_builtin_include_directory: "/usr/local/include"
+  cxx_builtin_include_directory: "/usr/lib/gcc/x86_64-linux-gnu/4.8/include-fixed"
+  cxx_builtin_include_directory: "/usr/include/x86_64-linux-gnu"
+  cxx_builtin_include_directory: "/usr/include"
+  cxx_builtin_include_directory: "/usr/local/cuda-9.0/targets/x86_64-linux/include"
+  cxx_builtin_include_directory: "/usr/local/cuda-9.0/include"
+  cxx_builtin_include_directory: "/usr/local/cuda-9.0/extras/CUPTI/include"
+  cxx_builtin_include_directory: "/usr/include"
 }
 
 toolchain {
@@ -554,23 +576,23 @@ toolchain {
   compiler: "msvc-cl"
   target_libc: "msvcrt"
 
-%{cxx_builtin_include_directory}
+
 
   tool_path {
     name: "ar"
-    path: "%{msvc_lib_path}"
+    path: ""
   }
   tool_path {
     name: "ml"
-    path: "%{msvc_ml_path}"
+    path: ""
   }
   tool_path {
     name: "cpp"
-    path: "%{msvc_cl_path}"
+    path: ""
   }
   tool_path {
     name: "gcc"
-    path: "%{msvc_cl_path}"
+    path: ""
   }
   tool_path {
     name: "gcov"
@@ -578,7 +600,7 @@ toolchain {
   }
   tool_path {
     name: "ld"
-    path: "%{msvc_link_path}"
+    path: ""
   }
   tool_path {
     name: "nm"
@@ -687,7 +709,7 @@ toolchain {
     config_name: 'assemble'
     action_name: 'assemble'
     tool {
-      tool_path: '%{msvc_ml_path}'
+      tool_path: ''
     }
     implies: 'compiler_input_flags'
     implies: 'compiler_output_flags'
@@ -700,7 +722,7 @@ toolchain {
     config_name: 'preprocess-assemble'
     action_name: 'preprocess-assemble'
     tool {
-      tool_path: '%{msvc_ml_path}'
+      tool_path: ''
     }
     implies: 'compiler_input_flags'
     implies: 'compiler_output_flags'
@@ -713,7 +735,7 @@ toolchain {
     config_name: 'c-compile'
     action_name: 'c-compile'
     tool {
-      tool_path: '%{msvc_cl_path}'
+      tool_path: ''
     }
     implies: 'compiler_input_flags'
     implies: 'compiler_output_flags'
@@ -730,7 +752,7 @@ toolchain {
     config_name: 'c++-compile'
     action_name: 'c++-compile'
     tool {
-      tool_path: '%{msvc_cl_path}'
+      tool_path: ''
     }
     implies: 'compiler_input_flags'
     implies: 'compiler_output_flags'
@@ -747,7 +769,7 @@ toolchain {
     config_name: 'c++-link-executable'
     action_name: 'c++-link-executable'
     tool {
-      tool_path: '%{msvc_link_path}'
+      tool_path: ''
     }
     implies: 'nologo'
     implies: 'linkstamps'
@@ -765,7 +787,7 @@ toolchain {
     config_name: 'c++-link-dynamic-library'
     action_name: 'c++-link-dynamic-library'
     tool {
-      tool_path: '%{msvc_link_path}'
+      tool_path: ''
     }
     implies: 'nologo'
     implies: 'shared_flag'
@@ -786,7 +808,7 @@ toolchain {
       config_name: 'c++-link-nodeps-dynamic-library'
       action_name: 'c++-link-nodeps-dynamic-library'
       tool {
-        tool_path: '%{msvc_link_path}'
+        tool_path: ''
       }
       implies: 'nologo'
       implies: 'shared_flag'
@@ -807,7 +829,7 @@ toolchain {
     config_name: 'c++-link-static-library'
     action_name: 'c++-link-static-library'
     tool {
-      tool_path: '%{msvc_lib_path}'
+      tool_path: ''
     }
     implies: 'nologo'
     implies: 'archiver_flags'
@@ -851,23 +873,23 @@ toolchain {
       action: "c++-link-static-library"
       env_entry {
         key: "PATH"
-        value: "%{msvc_env_path}"
+        value: ""
       }
       env_entry {
         key: "INCLUDE"
-        value: "%{msvc_env_include}"
+        value: ""
       }
       env_entry {
         key: "LIB"
-        value: "%{msvc_env_lib}"
+        value: ""
       }
       env_entry {
         key: "TMP"
-        value: "%{msvc_env_tmp}"
+        value: ""
       }
       env_entry {
         key: "TEMP"
-        value: "%{msvc_env_tmp}"
+        value: ""
       }
     }
   }
