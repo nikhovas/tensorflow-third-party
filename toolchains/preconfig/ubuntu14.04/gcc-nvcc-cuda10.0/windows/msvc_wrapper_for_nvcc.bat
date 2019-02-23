@@ -17,4 +17,4 @@
 @echo OFF
 set arg0=%~0
 for %%F in ("%arg0%") do set DRIVER_BIN=%%~dpF
-"%{python_binary}" -B "%DRIVER_BIN%\msvc_wrapper_for_nvcc.py" %*
+"/usr/bin/python3" -B "%DRIVER_BIN%\msvc_wrapper_for_nvcc.py" %*
